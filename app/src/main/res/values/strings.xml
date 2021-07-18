@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">My Application</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
+    <string name="calcola">Calcola</string>
+    <string name="Vuoto">Vuoto</string>
+    <string name="title_activity_show_trip">Map</string>
+    <string name="archivio">Archivio</string>
+    <string name="impostazioni">Impostazioni</string>
+
+    <string-array name="distances_array">
+        <item>500m</item>
+        <item>1km</item>
+        <item>5km</item>
+        <item>10km</item>
+    </string-array>
+
+    <string-array name="time_array">
+        <item>3gg</item>
+        <item>5gg</item>
+        <item>10gg</item>
+        <item>15gg</item>
+    </string-array>
+
+</resources>
