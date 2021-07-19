@@ -18,12 +18,16 @@ class ViewModel(application: Application) : AndroidViewModel(application)  {
         return mRepository.getAllData()
     }
 
-    fun insert(dataEntity: DataEntity){
+    suspend fun insert(dataEntity: DataEntity){
         mRepository.insert(dataEntity)
     }
 
     suspend fun getMaxId() : Int{
         return mRepository.maxId()
+    }
+
+    suspend fun deleteById(id: Int){
+        mRepository.deleteById(id)
     }
 
 }

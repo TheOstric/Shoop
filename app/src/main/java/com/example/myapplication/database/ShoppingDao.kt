@@ -18,7 +18,7 @@ interface ShoppingDao {
     fun delete(entity: DataEntity)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    fun insert(entity: DataEntity)
+    suspend fun insert(entity: DataEntity)
 
     @Query("DELETE FROM dataentity WHERE timestamp <= :time ")
     suspend fun deleteByDate(time: Double)

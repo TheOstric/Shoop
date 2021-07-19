@@ -2,6 +2,7 @@ package com.example.myapplication.ui.dashboard
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.media.Image
 import android.view.LayoutInflater
 import android.view.View
@@ -9,8 +10,10 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
+import com.example.myapplication.MapsActivity
 import com.example.myapplication.R
 import com.example.myapplication.database.DataEntity
 import com.example.myapplication.databinding.RecyclerviewItemBinding
@@ -33,38 +36,13 @@ class DataEntityAdapter(private val context: Context?) : RecyclerView.Adapter<Da
             val market = current.sList
             val pharmacy = current.fList
             holder.visualize.setOnClickListener {
-                val builder = AlertDialog.Builder(context)
-                builder.setTitle("Lista della spesa")
-
-
-                if (market == "" && pharmacy == "") {
-                    builder.setMessage("La lista è vuota. Si prega di inserire elementi nella lista della spesa.")
-                } else {
-
-                    builder.setMessage(market + "\n" + pharmacy)
+                val intent = Intent(context, DbEntryActivity::class.java)
+                intent.putExtra("market",market)
+                intent.putExtra("pharmacy",pharmacy)
+                intent.putExtra("identifier",current.id)
+                if (context != null) {
+                    context.startActivity(intent)
                 }
-
-
-                // Add OK and Cancel buttons
-                builder.setPositiveButton("OK", null)
-
-                builder.setNegativeButton("Cancel", null)
-
-// Create and show the alert dialog
-                val dialog = builder.create()
-                dialog.show()
-            }
-
-            holder.copy.setOnClickListener {
-                val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context?.applicationContext)
-                val editor = sharedPref.edit()
-                editor.putString("market",market).apply()
-                editor.putString("pharmacy",pharmacy).apply()
-                Toast.makeText(context,"Copied.",Toast.LENGTH_SHORT).show()
-            }
-
-            holder.delete.setOnClickListener {
-
             }
         } else {
             holder.dateText.text = "No date"
@@ -84,16 +62,12 @@ class DataEntityAdapter(private val context: Context?) : RecyclerView.Adapter<Da
 
     class DataEntityHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         var dateText: TextView
-        var delete: ImageButton
         var visualize: ImageButton
-        var copy: ImageButton
         var binding: RecyclerviewItemBinding = RecyclerviewItemBinding.bind(itemView)
 
         init {
             dateText = binding.recyclerDate
-            delete = binding.delete
             visualize = binding.visualize
-            copy = binding.copy
         }
     }
 }

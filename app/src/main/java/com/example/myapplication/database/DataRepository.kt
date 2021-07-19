@@ -18,7 +18,7 @@ class DataRepository(application: Application, viewModelScope: CoroutineScope) {
         return shoppingDao.getAllData()
     }
 
-    fun insert(dataEntity: DataEntity){
+    suspend fun insert(dataEntity: DataEntity){
         shoppingDao.insert(dataEntity)
     }
 
