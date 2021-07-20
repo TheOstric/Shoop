@@ -25,14 +25,31 @@ class DbEntryActivity : AppCompatActivity() {
         val mViewModel = ViewModel(application)
         val market = intent.extras?.getString("market")
         val pharmacy = intent.extras?.getString("pharmacy")
+        val gas = intent.extras?.getString("gas")
+        val hospital = intent.extras?.getString("hospital")
         val id = intent.extras?.getInt("identifier")
 
         if ( market != null && pharmacy != null){
             var message = ""
+            message += "\nSupermercato\n"
             if ( market != "" )
                 message += market
+            message != "\n"
+
+            message += "\nFarmacia\n"
             if ( pharmacy != "" )
                 message += pharmacy
+            message += "\n"
+
+            message += "\nBenzinaio\n"
+            if ( market != "" )
+                message += market
+            message != "\n"
+
+            message += "\nOspedale\n"
+            if ( pharmacy != "" )
+                message += pharmacy
+            message += "\n"
 
             textView.text = message
         } else {
@@ -44,6 +61,8 @@ class DbEntryActivity : AppCompatActivity() {
             val editor = sharedPref.edit()
             editor.putString("market",market).apply()
             editor.putString("pharmacy",pharmacy).apply()
+            editor.putString("gastation",gas).apply()
+            editor.putString("hospital",hospital).apply()
             Toast.makeText(this,"Copied.", Toast.LENGTH_SHORT).show()
         }
 

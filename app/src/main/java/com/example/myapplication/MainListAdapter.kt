@@ -13,7 +13,7 @@ class MainListAdapter(context: Context?, textViewResourceId: Int, objects: List<
         context!!, textViewResourceId, objects!!
     ) {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        var convertView = convertView
+        val convertView: View?
         val inflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         convertView = inflater.inflate(R.layout.list_item_main, null)
         val textView = convertView.findViewById<View>(R.id.text_view_item_main) as TextView
@@ -23,11 +23,20 @@ class MainListAdapter(context: Context?, textViewResourceId: Int, objects: List<
         when (name) {
             "Supermercato" -> {
                 convertView.setBackgroundResource(R.drawable.radius)
-                imageView.setImageResource(R.drawable.supermarket)
+                imageView.setImageResource(R.drawable.ic_market)
             }
             "Farmacia" -> {
                 convertView.setBackgroundResource(R.drawable.radius_teal)
-                imageView.setImageResource(R.drawable.red_cross)
+                imageView.setImageResource(R.drawable.ic_pharma)
+            }
+
+            "Benzinaio" -> {
+                convertView.setBackgroundResource(R.drawable.radius_gas)
+                imageView.setImageResource(R.drawable.ic_gpl)
+            }
+            "Ospedale" -> {
+                convertView.setBackgroundResource(R.drawable.radius_hosp)
+                imageView.setImageResource(R.drawable.ic_hospital)
             }
         }
         return convertView

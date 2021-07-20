@@ -53,7 +53,6 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
     //lista di stringhe usata per contenere gli elementi che sono stati scritti sulle varie liste
     private val shoppingList : MutableList<String> = ArrayList()
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -64,6 +63,13 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         //inizializzazione del layout del fragment e delle sue componenti
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
+
+        return root
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         listView = binding.listViewMain
         buttonOne = binding.mainButton1
@@ -93,14 +99,25 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context?.applicationContext)
         val marketPref = sharedPref.getString("market","")
         val pharmacyPref = sharedPref.getString("pharmacy","")
+        val gasPref = sharedPref.getString("gastation","")
+        val hospitalPref = sharedPref.getString("hospital","")
 
         sharedPref.edit().remove("market").apply()
         sharedPref.edit().remove("pharmacy").apply()
+        sharedPref.edit().remove("gastation").apply()
+        sharedPref.edit().remove("hospital").apply()
+
         if (marketPref != null) {
             shoppingList[0] = marketPref
         }
         if(pharmacyPref != null) {
             shoppingList[1] = pharmacyPref
+        }
+        if (gasPref != null) {
+            shoppingList[2] = gasPref
+        }
+        if(hospitalPref != null) {
+            shoppingList[3] = hospitalPref
         }
 
         //inizialmente i pulsati vengono disabilitati e nascosti, per poi apparire con un'animazione di transizione quando viene premuto quello centrale
@@ -147,54 +164,14 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         buttonThree.setOnClickListener {
             calculateTrip(shoppingList)
         }
-
-        return root
     }
-
-    /*@RequiresApi(Build.VERSION_CODES.O)
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        shoppingList.add("")
-        shoppingList.add("")
-        buttonTwo.alpha = 0f
-        buttonThree.alpha = 0f
-
-        buttonOne.setOnClickListener {
-            buttonOne.alpha = 0f
-            buttonOne.isClickable = false
-
-            buttonTwo.animate().alpha(1f).translationXBy(-200F).duration = 2000
-            buttonThree.animate().alpha(1f).translationXBy(200F).duration = 2000
-        }
-
-        list.add("Supermercato")
-        list.add("Farmacia")
-        val adapter = MainListAdapter(this.context, R.layout.list_item_main, list)
-
-        listView.adapter = adapter
-
-        listView.onItemClickListener = AdapterView.OnItemClickListener { parent, view, position, id ->
-            onItemClick(shoppingList, list, position)
-        }
-
-        listView.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, view, position, id ->
-            onItemLongClick(shoppingList,list,position)
-        }
-
-        buttonTwo.setOnClickListener {
-            saveData(shoppingList)
-        }
-
-        buttonThree.setOnClickListener {
-            calculateTrip(shoppingList)
-        }
-    }*/
 
     private fun calculateTrip(shoppingList: MutableList<String>) {
         val intent = Intent(this.context, MapsActivity::class.java)
         intent.putExtra("market", shoppingList[0])
         intent.putExtra("pharmacy",shoppingList[1])
+        intent.putExtra("gas", shoppingList[2])
+        intent.putExtra("hospital",shoppingList[3])
         startActivity(intent)
     }
 
@@ -203,12 +180,15 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
 
         val sList = shopping_list[0]
         val pList = shopping_list[1]
+        val gList = shopping_list[2]
+        val hList = shopping_list[3]
+        
 
         val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
         val currentDate = sdf.format(Date())
         max_id++
         val entity: DataEntity =
-            com.example.myapplication.database.DataEntity(max_id, Date().time / 1000,currentDate, sList, pList)
+            com.example.myapplication.database.DataEntity(max_id, Date().time / 1000,currentDate, sList, pList, gList, hList)
         mViewModel.viewModelScope.launch {
             mViewModel.insert(entity)
         }
@@ -224,29 +204,50 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         when (list[position]) {
             "Supermercato" -> {
                 alertDialog.setTitle("Lista supermercato")
-                alertDialog.setIcon(R.drawable.supermarket)
+                alertDialog.setIcon(R.drawable.ic_market)
                 alertDialog.setCancelable(true)
                 editText.hint = "Inserire la lista per il supermercato..."
                 if (shopping_list[0] != "") editText.setText(shopping_list[0])
             }
             "Farmacia" -> {
                 alertDialog.setTitle("Lista farmacia")
-                alertDialog.setIcon(R.drawable.red_cross)
+                alertDialog.setIcon(R.drawable.ic_pharma)
                 alertDialog.setCancelable(true)
                 editText.hint = "Inserire la lista per il farmacia..."
                 if (shopping_list[1] != "") editText.setText(shopping_list[1])
+            }
+
+            "Benzinaio" -> {
+                alertDialog.setTitle("Lista benzinaio")
+                alertDialog.setIcon(R.drawable.ic_gpl)
+                alertDialog.setCancelable(true)
+                editText.hint = "Inserire la lista per il benzinaio..."
+                if (shopping_list[2] != "") editText.setText(shopping_list[2])
+            }
+            "Ospedale" -> {
+                alertDialog.setTitle("Lista ospedale")
+                alertDialog.setIcon(R.drawable.ic_hospital)
+                alertDialog.setCancelable(true)
+                editText.hint = "Inserire la lista per l'ospedale..."
+                if (shopping_list[3] != "") editText.setText(shopping_list[3])
             }
         }
         //setto il pulsante positivo OK in modo che mi salvi le cose scritte nella lista all'interno
         //dell'array shopping_list, in base a quale pulsante è stato cliccato avrà un indice diverso nell'array
         alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Ok") { dialog, which ->
-            val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context!!.applicationContext)
+            val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(
+                context?.applicationContext
+            )
             val editor = sharedPref.edit()
             when (list[position]) {
                 "Supermercato" ->{ shopping_list[0] = editText.text.toString()
                     editor.putString("market",editText.text.toString()).apply() }
                 "Farmacia" -> { shopping_list[1] = editText.text.toString()
                     editor.putString("pharmacy",editText.text.toString()).apply() }
+                "Benzinaio" ->{ shopping_list[2] = editText.text.toString()
+                    editor.putString("gastation",editText.text.toString()).apply() }
+                "Ospedale" -> { shopping_list[3] = editText.text.toString()
+                    editor.putString("hospital",editText.text.toString()).apply() }
             }
         }
         alertDialog.setButton(
@@ -268,6 +269,10 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
                 shopping_list[0] else textView.setText(R.string.Vuoto)
             "Farmacia" -> if (shopping_list[1] != "") textView.text =
                 shopping_list[1] else textView.setText(R.string.Vuoto)
+            "Benzinaio" -> if (shopping_list[2] != "") textView.text =
+                shopping_list[2] else textView.setText(R.string.Vuoto)
+            "Ospedale" -> if (shopping_list[3] != "") textView.text =
+                shopping_list[3] else textView.setText(R.string.Vuoto)
         }
         alertDialog.show()
         return true

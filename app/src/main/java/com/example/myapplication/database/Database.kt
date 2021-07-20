@@ -13,7 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.*
 
-@Database(entities = arrayOf(DataEntity::class), version = 4)
+@Database(entities = arrayOf(DataEntity::class), version = 5)
 @TypeConverters(Converters::class)
 abstract class ShoopDatabase : RoomDatabase() {
     abstract fun shoppingDao() : ShoppingDao
@@ -58,12 +58,12 @@ abstract class ShoopDatabase : RoomDatabase() {
 
                 if (time == "3gg")
                     timestamp = 259200.0
-                /*if (radius == "1km")
-                    radius = "1000"
-                if (radius == "5km")
-                    radius = "5000"
-                if (radius == "10km")
-                    radius = "10000"*/
+                if (time == "5gg")
+                    timestamp = 432000.0
+                if (time == "10gg")
+                    timestamp = 864000.0
+                if (time == "15gg")
+                    timestamp = 1296000.0
                 if (time == "empty")
                     timestamp = 259200.0
 

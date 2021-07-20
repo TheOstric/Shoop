@@ -9,4 +9,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="orange">#FFA500</color>
     <color name="pharmacy">#050</color>
+    <color name="gas">#FFBF00</color>
 </resources>
