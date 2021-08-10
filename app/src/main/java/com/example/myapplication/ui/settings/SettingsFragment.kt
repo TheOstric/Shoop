@@ -9,14 +9,13 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.appcompat.widget.TooltipCompat
 import androidx.fragment.app.Fragment
 import com.example.myapplication.R
 import com.example.myapplication.databinding.FragmentSettingsBinding
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class SettingsFragment: Fragment(R.layout.fragment_settings) {
-
-    // private lateinit var homeViewModel: HomeViewModel
-    private var fragmentSettingsBinding: FragmentSettingsBinding? = null
 
     private var _binding: FragmentSettingsBinding? = null
     // This property is only valid between onCreateView and
@@ -24,6 +23,7 @@ class SettingsFragment: Fragment(R.layout.fragment_settings) {
     private val binding get() = _binding!!
     private lateinit var spinner: Spinner
     private lateinit var timeSpinner: Spinner
+    private lateinit var travelSpinner: Spinner
 
 
     override fun onCreateView(
@@ -36,7 +36,16 @@ class SettingsFragment: Fragment(R.layout.fragment_settings) {
         val root: View = binding.root
         spinner= binding.distancesSpinner
         timeSpinner = binding.timeSpinner
+        travelSpinner = binding.travelMode
 
+        val infoButtonOne = binding.fab
+        TooltipCompat.setTooltipText(infoButtonOne, "Distanza massima entro cui vengono cercati i servizi selezionati.");
+
+        val infoButtonTwo = binding.infoDb
+        TooltipCompat.setTooltipText(infoButtonTwo, "Permanenza massima degli elementi nel database.");
+
+        val infoButtonThree = binding.infoTravel
+        TooltipCompat.setTooltipText(infoButtonThree, "Mezzo di trasporto che si vuole utilizzare.");
 
         ArrayAdapter.createFromResource(
                 this.requireContext(),
@@ -54,6 +63,14 @@ class SettingsFragment: Fragment(R.layout.fragment_settings) {
             timeSpinner.adapter = adapter
         }
 
+        ArrayAdapter.createFromResource(
+            this.requireContext(),
+            R.array.travel_array,
+            android.R.layout.simple_spinner_item
+        ).also { adapter -> adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            travelSpinner.adapter = adapter
+        }
+
         val chosedItem = getPersistedItem()
         if ( chosedItem[0] != -1 ) {
             spinner.setSelection(chosedItem[0])
@@ -64,6 +81,11 @@ class SettingsFragment: Fragment(R.layout.fragment_settings) {
             timeSpinner.setSelection(chosedItem[1])
         } else {
             timeSpinner.setSelection(0)
+        }
+        if ( chosedItem[2] != -1 ) {
+            travelSpinner.setSelection(chosedItem[2])
+        } else {
+            travelSpinner.setSelection(0)
         }
 
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
@@ -85,6 +107,17 @@ class SettingsFragment: Fragment(R.layout.fragment_settings) {
                 TODO("Not yet implemented")
             }
         }
+
+        travelSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                setPersistedTravelItem(position)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                TODO("Not yet implemented")
+            }
+        }
+
         return root
     }
 
@@ -98,6 +131,7 @@ class SettingsFragment: Fragment(R.layout.fragment_settings) {
         val array = ArrayList<Int>()
         array.add(sharedPref.getInt("posDistance",-1))
         array.add(sharedPref.getInt("posTime",-1))
+        array.add(sharedPref.getInt("posTravel",-1))
         return array
     }
 
@@ -113,6 +147,13 @@ class SettingsFragment: Fragment(R.layout.fragment_settings) {
         val editor = sharedPref.edit()
         editor.putInt("posTime",position).apply()
         editor.putString("time",timeSpinner.selectedItem.toString()).apply()
+    }
+
+    private fun setPersistedTravelItem(position: Int){
+        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(activity?.applicationContext)
+        val editor = sharedPref.edit()
+        editor.putInt("posTravel",position).apply()
+        editor.putString("travelMode",travelSpinner.selectedItem.toString()).apply()
     }
 
 }

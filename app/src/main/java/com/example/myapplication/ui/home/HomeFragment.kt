@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.home
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -21,6 +22,7 @@ import com.example.myapplication.model.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -130,8 +132,8 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
             buttonOne.alpha = 0f
             buttonOne.isEnabled = false
 
-            buttonTwo.animate().alpha(1f).translationXBy(-200F).duration = 2000
-            buttonThree.animate().alpha(1f).translationXBy(200F).duration = 2000
+            buttonTwo.animate().alpha(1f).translationXBy(-150F).duration = 2000
+            buttonThree.animate().alpha(1f).translationXBy(150F).duration = 2000
             buttonTwo.isEnabled = true
             buttonThree.isEnabled = true
         }
@@ -177,22 +179,28 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun saveData(shopping_list: MutableList<String>) {
-
+        var exc = false
         val sList = shopping_list[0]
         val pList = shopping_list[1]
         val gList = shopping_list[2]
         val hList = shopping_list[3]
-        
 
         val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
         val currentDate = sdf.format(Date())
         max_id++
         val entity: DataEntity =
             com.example.myapplication.database.DataEntity(max_id, Date().time / 1000,currentDate, sList, pList, gList, hList)
-        mViewModel.viewModelScope.launch {
-            mViewModel.insert(entity)
+        try {
+            mViewModel.viewModelScope.launch {
+                mViewModel.insert(entity)
+            }
+        } catch (e: Exception){
+            exc = true
         }
 
+        if (!exc) {
+            Toast.makeText(this.context, "Salvato.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun onItemClick(shopping_list: MutableList<String>,
@@ -211,7 +219,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
             }
             "Farmacia" -> {
                 alertDialog.setTitle("Lista farmacia")
-                alertDialog.setIcon(R.drawable.ic_pharma)
+                alertDialog.setIcon(R.drawable.ic_info)
                 alertDialog.setCancelable(true)
                 editText.hint = "Inserire la lista per il farmacia..."
                 if (shopping_list[1] != "") editText.setText(shopping_list[1])

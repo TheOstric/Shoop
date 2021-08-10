@@ -76,8 +76,12 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
     val list: HashMap<String,String> = HashMap()
 
+    lateinit var errorButton: Button
+
+    private var nearbySearched = false
+
     //variable used to determine whenever a distance choosed is not enough to discover the nearest service required
-    var error = false
+    var error = ""
 
     @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -90,6 +94,9 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
         val market = intent.extras?.getString("market")
         val pharmacy = intent.extras?.getString("pharmacy")
+        val gas = intent.extras?.getString("gas")
+        val hospital = intent.extras?.getString("hospital")
+
 
         if (market != "") {
             list["supermarket"] = market!!
@@ -102,6 +109,19 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         } else {
             list["pharmacy"] = ""
         }
+
+        if (gas != "") {
+            list["gas_station"] = gas!!
+        } else {
+            list["gas_station"] = ""
+        }
+
+        if (hospital != "") {
+            list["hospital"] = hospital!!
+        } else {
+            list["hospital"] = ""
+        }
+
         //Initialize service
         mService = Common.googleAPI
         mScalarService = Common.googleAPIScalars
@@ -110,10 +130,11 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
         val driveButton = findViewById<Button>(R.id.driving_button)
         val listButton = findViewById<Button>(R.id.shoppinglist_button)
+        errorButton = findViewById<Button>(R.id.error_button)
+
         //Request runtime permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkLocationPermission()) {
-                Log.d("TAG","QUI")
                 buildLocationRequest()
                 buildLocationCallback()
 
@@ -123,11 +144,8 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                     locationCallback,
                     Looper.myLooper()!!
                 )
-
-
             }
         } else {
-            Log.d("TAG","QUI1")
             buildLocationRequest()
             buildLocationCallback()
 
@@ -138,16 +156,9 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                 Looper.myLooper()!!
             )
         }
-        //mMap?.clear()
-
-
-
-
-        //nearbyPlace(list)
 
         driveButton.setOnClickListener {
             if (pointsList.size > 2){
-                Log.d("POINTS",pointsList.toString())
                 val URL = getDrivingUrl()
                 val location: Uri = Uri.parse(URL)
                 val mapIntent = Intent(Intent.ACTION_VIEW, location)
@@ -163,12 +174,13 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Lista della spesa")
 
-            if (market == "" && pharmacy == "") {
+            if (market == "" && pharmacy == "" && gas == "" && hospital == "") {
                 builder.setMessage("La lista è vuota. Si prega di inserire elementi nella lista della spesa.")
+                checkedItems = load(0)
             } else {
                 // Add a checkbox list
-                if (market != null && pharmacy != null) {
-                    val shopList = market.lines().plus(pharmacy.lines())
+                if (market != null && pharmacy != null && gas != null && hospital != null) {
+                    val shopList = market.lines().plus(pharmacy.lines()).plus(gas.lines()).plus(hospital.lines())
 
                     val array: Array<String> = shopList.toTypedArray()
 
@@ -183,7 +195,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
 
             // Add OK and Cancel buttons
-            builder.setPositiveButton("OK") { dialog, which ->
+            builder.setPositiveButton("Ok") { dialog, which ->
                 if (checkedItems.isNotEmpty())
                     save(checkedItems)
             }
@@ -192,6 +204,19 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 // Create and show the alert dialog
             val dialog = builder.create()
             dialog.show()
+        }
+
+        errorButton.setOnClickListener {
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle("Errori!")
+            builder.setMessage(error)
+
+            builder.setPositiveButton("Ok",null)
+
+            val dialog = builder.create()
+            dialog.show()
+
+
         }
     }
     private fun nearbyPlace (typePlace: HashMap<String,String>){
@@ -205,14 +230,11 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         pointsList.add(srcLat)
         pointsList.add(srcLng)
         var arrayList: ArrayList<Double>
-        var error = false
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Errori!")
+        var e = false
 
-        Log.d("SIZE",typePlace.size.toString())
+
         for (j in typePlace.keys) {
             if (typePlace[j] != ""){
-                Log.e("HERE","qui")
                 //build URL request base on location
                 val url = getUrl(srcLat, srcLng, j)
                 val destinations: MutableList<String> = ArrayList()
@@ -237,7 +259,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                                         val lat = googlePlace.geometry!!.location!!.lat
                                         val long = googlePlace.geometry!!.location!!.lng
                                         val placeName = googlePlace.name
-                                        //latLng = LatLng(lat, long)
+
 
                                         val dest = StringBuilder(lat.toString()).append("%2C")
                                             .append(long.toString())
@@ -249,12 +271,17 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                                         latLngs.add(LatLng(lat, long))
                                     }
                                 } else {
-                                    error = true
+                                    e = true
+                                    error += j + ": non ci sono negozi di questo tipo nell'area della distanza selezionata.\n" +
+                                            " Si prega di selezionare un'altra distanza e ricalcolare l'itinerario.\n"
+                                    if (!errorButton.isEnabled) {
+                                        errorButton.isEnabled = true
+                                    }
                                 }
 
-                                if (!error) {
+                                if (!e) {
                                     val thread = Thread {
-                                        getDestination(destinations, names, latLngs, srcLat, srcLng)
+                                        getDestination(destinations, latLngs, srcLat, srcLng)
                                     }
                                     thread.start()
 
@@ -291,11 +318,9 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
                                     pointsList.add(srcLat)
                                     pointsList.add(srcLng)
-                                    Log.e("LISTIS",pointsList.toString())
                                     driving.add("${srcLat},${srcLng}")
                                 } else {
-                                    builder.setMessage(j + ": non ci sono negozi di questo tipo nell'area della distanza selezionata." +
-                                            " Si prega di selezionare un'altra distanza e ricalcolare l'itinerario.")
+                                    e = false
                                 }
                             }
                         }
@@ -305,14 +330,10 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                     })
             }
         }
-
-        if (error)
-            builder.show()
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
     private fun drawPath(startingLat: Double, startingLong: Double, destLat: Double, destLng: Double) {
-        //polyline?.remove()
 
         val url = getDirectionUrl(startingLat,startingLong,destLat,destLng)
         val response = mService.getDirections(url).execute()
@@ -342,9 +363,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         pBlockingQueue.add(polyLineOptions)
     }
 
-    private fun getDestination(destinations: MutableList<String>, names: MutableList<String>?, latLngs: MutableList<LatLng>, startingLat: Double, startingLong: Double){
-
-       // mMap?.clear()
+    private fun getDestination(destinations: MutableList<String>, latLngs: MutableList<LatLng>, startingLat: Double, startingLong: Double){
 
         val url = getDistanceUrl(startingLat,startingLong, destinations)
         lateinit var latlng: LatLng
@@ -352,7 +371,6 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
         val insideRes = ArrayList<Double>()
         val response = mService.getDuration(url).execute()
-        Log.d("Lista",response.toString())
         if (response.body()!!.rows!!.isNotEmpty()) {
 
             for (i in response.body()!!.rows!!.indices) {
@@ -398,41 +416,58 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         googleURL.append("?location=$currentLat,$currentLong")
         googleURL.append("&radius=$radius")
         googleURL.append("&type=$typePlace")
-        googleURL.append("&key=")
+        googleURL.append("&key=AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs")
 
-        Log.d("URLCHECK",googleURL.toString())
         return googleURL.toString()
     }
 
     private fun getDrivingUrl(): String {
+        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        var travel = sharedPref.getString("travelMode","empty")
+
+        if (travel == "empty")
+            travel = "driving"
 
         val googleURL = StringBuilder("https://www.google.com/maps/dir/?api=1")
-        googleURL.append("&travelmode=driving")
+        googleURL.append("&travelmode=$travel")
         googleURL.append("&dir_action=navigate")
         googleURL.append("&origin=${pointsList[0]},${pointsList[1]}")
         googleURL.append("&destination=${pointsList[pointsList.size-2]},${pointsList[pointsList.size-1]}")
         if( pointsList.size > 4) {
             googleURL.append("&waypoints=${driving[0]}")
-            for (i in driving.indices - 1) {
-                if (i != 0)
+            for (i in driving.indices) {
+                if (i != 0 && i != driving.size - 1)
                     googleURL.append("|${driving[i]}")
             }
         }
 
-        Log.d("CHECK DRIVING",googleURL.toString())
         return googleURL.toString()
     }
 
     private fun getDirectionUrl(currentLat: Double, currentLong: Double, destLat: Double, destLng: Double): String {
+        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        var travel = sharedPref.getString("travelMode","empty")
+
+        if (travel == "empty")
+            travel = "driving"
+
         val googleURL = StringBuilder("https://maps.googleapis.com/maps/api/directions/json")
         googleURL.append("?origin=$currentLat,$currentLong")
         googleURL.append("&destination=$destLat,$destLng")
-        googleURL.append("&key=")
+        googleURL.append("&mode=$travel")
+        googleURL.append("&key=AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs")
 
+        Log.e("URL",googleURL.toString())
         return googleURL.toString()
     }
 
     private fun getDistanceUrl(currentLat: Double, currentLong: Double, destCoordinates: MutableList<String>): String {
+        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        var travel = sharedPref.getString("travelMode","empty")
+
+        if (travel == "empty")
+            travel = "driving"
+
         val googleURL = StringBuilder("https://maps.googleapis.com/maps/api/distancematrix/json")
         googleURL.append("?units=imperial")
         googleURL.append("&origins=$currentLat,$currentLong")
@@ -444,7 +479,8 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
             else
                 googleURL.append(currentItem)
         }
-        googleURL.append("&key=")
+        googleURL.append("&mode=$travel")
+        googleURL.append("&key=AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs")
 
         return googleURL.toString()
     }
@@ -468,7 +504,10 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
                 mMap!!.moveCamera(com.google.android.gms.maps.CameraUpdateFactory.newLatLng(latLng))
                 mMap!!.animateCamera(com.google.android.gms.maps.CameraUpdateFactory.zoomTo(11f))
-                nearbyPlace(list)
+                if (!nearbySearched) {
+                    nearbyPlace(list)
+                    nearbySearched = true
+                }
 
             }
         }
@@ -510,8 +549,6 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                         } catch (e: ClassCastException) {
                             // Ignore, should be an impossible error.
                         }
-                    LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> {
-                    }
                 }
             }
         })

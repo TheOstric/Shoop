@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.myapplication">
-
-    <!--
-         The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
-         Google Maps Android API v2, but you must specify either coarse or fine
-         location permissions for the "MyLocation" functionality.
-    -->
-    <!--<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />-->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
@@ -28,12 +21,24 @@
         -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="" />
+            android:value="AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs" />
         <activity android:name=".MapsActivity"
-            android:label="@string/title_activity_show_trip"/>
+            android:label="@string/title_activity_show_trip">
+            <intent-filter>
+                <action android:name="package.OtherActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <activity android:name=".ui.dashboard.DbEntryActivity"
-            android:label="Entry"/>
+            android:label="Entry">
+            <intent-filter>
+                <action android:name="package.OtherActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name">

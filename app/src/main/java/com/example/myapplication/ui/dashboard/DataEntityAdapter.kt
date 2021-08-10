@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.media.Image
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,10 +36,15 @@ class DataEntityAdapter(private val context: Context?) : RecyclerView.Adapter<Da
 
             val market = current.sList
             val pharmacy = current.fList
+            val gas = current.gList
+            val hosp = current.hList
+
             holder.visualize.setOnClickListener {
                 val intent = Intent(context, DbEntryActivity::class.java)
                 intent.putExtra("market",market)
                 intent.putExtra("pharmacy",pharmacy)
+                intent.putExtra("gas",gas)
+                intent.putExtra("hospital",hosp)
                 intent.putExtra("identifier",current.id)
                 if (context != null) {
                     context.startActivity(intent)

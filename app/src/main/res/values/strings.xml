@@ -3,11 +3,15 @@
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
-    <string name="calcola">Calcola</string>
+    <string name="calcola">Calcola Tragitto</string>
     <string name="Vuoto">Vuoto</string>
     <string name="title_activity_show_trip">Map</string>
     <string name="archivio">Archivio</string>
     <string name="impostazioni">Impostazioni</string>
+    <string name="salva">Salva Lista</string>
+    <string name="distanza">Distanza</string>
+    <string name="durata_database">Durata database</string>
+    <string name="mezzo_di_trasporto">Mezzo di trasporto</string>
 
     <string-array name="distances_array">
         <item>500m</item>
@@ -21,6 +25,12 @@
         <item>5gg</item>
         <item>10gg</item>
         <item>15gg</item>
+    </string-array>
+
+    <string-array name="travel_array">
+        <item>driving</item>
+        <item>walking</item>
+        <item>bicycling</item>
     </string-array>
 
 </resources>

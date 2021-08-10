@@ -31,24 +31,24 @@ class DbEntryActivity : AppCompatActivity() {
 
         if ( market != null && pharmacy != null){
             var message = ""
-            message += "\nSupermercato\n"
+            message += "\nSUPERMERCATO\n"
             if ( market != "" )
                 message += market
-            message != "\n"
+            message += "\n"
 
-            message += "\nFarmacia\n"
+            message += "\nFARMACIA\n"
             if ( pharmacy != "" )
                 message += pharmacy
             message += "\n"
 
-            message += "\nBenzinaio\n"
+            message += "\nBENZINAIO\n"
             if ( market != "" )
-                message += market
-            message != "\n"
+                message += gas
+            message += "\n"
 
-            message += "\nOspedale\n"
+            message += "\nOSPEDALE\n"
             if ( pharmacy != "" )
-                message += pharmacy
+                message += hospital
             message += "\n"
 
             textView.text = message
@@ -63,7 +63,7 @@ class DbEntryActivity : AppCompatActivity() {
             editor.putString("pharmacy",pharmacy).apply()
             editor.putString("gastation",gas).apply()
             editor.putString("hospital",hospital).apply()
-            Toast.makeText(this,"Copied.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this,"Copiato.", Toast.LENGTH_SHORT).show()
         }
 
         deleteButton.setOnClickListener {
@@ -71,6 +71,7 @@ class DbEntryActivity : AppCompatActivity() {
                 if (id != null) {
                     mViewModel.deleteById(id)
                     this@DbEntryActivity.finish()
+                    Toast.makeText(this@DbEntryActivity,"Eliminato.", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this@DbEntryActivity,"Errore nel corretto caricamento della pagina, tornare indietro e riprovare.",Toast.LENGTH_SHORT).show()
                 }
