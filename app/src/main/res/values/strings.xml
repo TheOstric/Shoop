@@ -15,6 +15,7 @@
     <string name="errori">Errori</string>
     <string name="info">Info</string>
     <string name="durata">Durata</string>
+    <string name="empty_db_message">Non ci sono liste salvate nel database</string>
 
     <string-array name="distances_array">
         <item>500m</item>

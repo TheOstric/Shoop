@@ -61,9 +61,9 @@ class DataEntityAdapter(private val context: Context?) : RecyclerView.Adapter<Da
     }
 
     override fun getItemCount(): Int {
-        if (mEntities != null)
-            return mEntities!!.size
-        else return 0
+        return if (mEntities != null)
+            mEntities!!.size
+        else 0
     }
 
     class DataEntityHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
