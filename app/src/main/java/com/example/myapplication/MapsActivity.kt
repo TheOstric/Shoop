@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.Looper
 import android.util.Log
 import android.widget.Button
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
@@ -38,6 +39,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Executor
+import kotlin.properties.Delegates
 
 
 class MapsActivity : FragmentActivity(), OnMapReadyCallback,
@@ -78,10 +80,14 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
     lateinit var errorButton: Button
 
-    private var nearbySearched = false
+    private var nearbySearched: Boolean = false
+
+    private var durations: HashMap<String,String> = HashMap()
 
     //variable used to determine whenever a distance choosed is not enough to discover the nearest service required
     var error = ""
+
+    private var count = 0
 
     @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,6 +98,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
             .findFragmentById(R.id.map) as SupportMapFragment?
         mapFragment!!.getMapAsync(this)
 
+        nearbySearched = false
         val market = intent.extras?.getString("market")
         val pharmacy = intent.extras?.getString("pharmacy")
         val gas = intent.extras?.getString("gas")
@@ -100,24 +107,28 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
         if (market != "") {
             list["supermarket"] = market!!
+            count += 1
         } else {
             list["supermarket"] = ""
         }
 
         if (pharmacy != "") {
             list["pharmacy"] = pharmacy!!
+            count += 1
         } else {
             list["pharmacy"] = ""
         }
 
         if (gas != "") {
             list["gas_station"] = gas!!
+            count += 1
         } else {
             list["gas_station"] = ""
         }
 
         if (hospital != "") {
             list["hospital"] = hospital!!
+            count += 1
         } else {
             list["hospital"] = ""
         }
@@ -130,7 +141,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
         val driveButton = findViewById<Button>(R.id.driving_button)
         val listButton = findViewById<Button>(R.id.shoppinglist_button)
-        errorButton = findViewById<Button>(R.id.error_button)
+        errorButton = findViewById(R.id.error_button)
 
         //Request runtime permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -207,16 +218,28 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         }
 
         errorButton.setOnClickListener {
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle("Errori!")
-            builder.setMessage(error)
+            val popupMenu = PopupMenu(this,errorButton)
+            popupMenu.menuInflater.inflate(R.menu.popup,popupMenu.menu)
+            popupMenu.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.info -> showDurations()
+                    R.id.errors -> {
+                        val builder = AlertDialog.Builder(this)
+                        builder.setTitle("Errori!")
+                        if(error != "")
+                            builder.setMessage(error)
+                        else
+                            builder.setMessage("Non si sono verificati errori durante la ricerca.")
 
-            builder.setPositiveButton("Ok",null)
+                        builder.setPositiveButton("Ok", null)
 
-            val dialog = builder.create()
-            dialog.show()
-
-
+                        val dialog = builder.create()
+                        dialog.show()
+                    }
+                }
+                true
+            }
+            popupMenu.show()
         }
     }
     private fun nearbyPlace (typePlace: HashMap<String,String>){
@@ -231,10 +254,12 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         pointsList.add(srcLng)
         var arrayList: ArrayList<Double>
         var e = false
+        var c = 0
 
 
         for (j in typePlace.keys) {
             if (typePlace[j] != ""){
+
                 //build URL request base on location
                 val url = getUrl(srcLat, srcLng, j)
                 val destinations: MutableList<String> = ArrayList()
@@ -256,32 +281,36 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                                 if (!response.body()!!.results!!.isEmpty()) {
                                     for (i in response.body()!!.results!!.indices) {
                                         val googlePlace = response.body()!!.results!![i]
-                                        val lat = googlePlace.geometry!!.location!!.lat
-                                        val long = googlePlace.geometry!!.location!!.lng
-                                        val placeName = googlePlace.name
+
+                                        if (googlePlace.opening_hours?.open_now == true) {
+                                            val lat = googlePlace.geometry!!.location!!.lat
+                                            val long = googlePlace.geometry!!.location!!.lng
+                                            val placeName = googlePlace.name
 
 
-                                        val dest = StringBuilder(lat.toString()).append("%2C")
-                                            .append(long.toString())
+                                            val dest = StringBuilder(lat.toString()).append("%2C")
+                                                .append(long.toString())
 
-                                        destinations.add(dest.toString())
-                                        if (placeName != null) {
-                                            names.add(placeName)
+                                            destinations.add(dest.toString())
+                                            if (placeName != null) {
+                                                names.add(placeName)
+                                            }
+                                            latLngs.add(LatLng(lat, long))
                                         }
-                                        latLngs.add(LatLng(lat, long))
+                                    }
+                                    if(destinations.isEmpty()){
+                                        e = true
+                                        error += j + ": tutti i negozi di questo tipo, entro la distanza selezionata, sono chiusi."
                                     }
                                 } else {
                                     e = true
                                     error += j + ": non ci sono negozi di questo tipo nell'area della distanza selezionata.\n" +
                                             " Si prega di selezionare un'altra distanza e ricalcolare l'itinerario.\n"
-                                    if (!errorButton.isEnabled) {
-                                        errorButton.isEnabled = true
-                                    }
                                 }
 
                                 if (!e) {
                                     val thread = Thread {
-                                        getDestination(destinations, latLngs, srcLat, srcLng)
+                                        getDestination(destinations, names, latLngs, srcLat, srcLng)
                                     }
                                     thread.start()
 
@@ -319,6 +348,11 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                                     pointsList.add(srcLat)
                                     pointsList.add(srcLng)
                                     driving.add("${srcLat},${srcLng}")
+                                    c += 1
+                                    if (c == count){
+                                        showDurations()
+                                    }
+
                                 } else {
                                     e = false
                                 }
@@ -329,7 +363,40 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                         }
                     })
             }
+
         }
+
+
+    }
+
+    private fun showDurations() {
+        val builder = AlertDialog.Builder(this@MapsActivity)
+        builder.setTitle("Durate:")
+        var min = 0
+        var h = 0
+        var message = ""
+        for (i in durations.keys){
+            message += i + ": " + durations[i] + "\n"
+            val splitted = durations[i]?.split(" ")
+            if (splitted != null) {
+                if (splitted.size == 2){
+                    min += splitted[0].toInt()
+                }
+                if (splitted.size == 4){
+                    h += splitted[0].toInt()
+                    min += splitted[2].toInt()
+                }
+            }
+        }
+
+        message += "\nDurata complessiva:\n"
+        message += "$h h $min mins"
+        builder.setMessage(message)
+
+        builder.setPositiveButton("Ok",null)
+
+        val dialog = builder.create()
+        dialog.show()
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
@@ -363,11 +430,14 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         pBlockingQueue.add(polyLineOptions)
     }
 
-    private fun getDestination(destinations: MutableList<String>, latLngs: MutableList<LatLng>, startingLat: Double, startingLong: Double){
+    private fun getDestination(destinations: MutableList<String>, names: MutableList<String>, latLngs: MutableList<LatLng>, startingLat: Double, startingLong: Double){
 
         val url = getDistanceUrl(startingLat,startingLong, destinations)
+
         lateinit var latlng: LatLng
         var duration: Int? = null
+        var durationString: String? = null
+        var destName: String = ""
 
         val insideRes = ArrayList<Double>()
         val response = mService.getDuration(url).execute()
@@ -379,10 +449,14 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                 for (j in dist.elements!!.indices) {
                     if (duration == null) {
                         duration = dist.elements!![j].duration?.value
+                        durationString = dist.elements!![j].duration?.text
                         latlng = latLngs[j]
+                        destName = names[j]
                     } else {
                         if (duration > dist.elements!![j].duration?.value!!) {
                             duration = dist.elements!![j].duration?.value
+                            durationString = dist.elements!![j].duration?.text
+                            destName = names[j]
                             latlng = latLngs[j]
                         }
                     }
@@ -390,8 +464,9 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
             }
 
             insideRes.add(latlng.latitude)
-            insideRes.add((latlng.longitude))
+            insideRes.add(latlng.longitude)
 
+            durations[destName] = durationString!!
             blockingQueue.add(insideRes)
         } else {
             latlng = LatLng(0.0,0.0)
@@ -418,6 +493,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         googleURL.append("&type=$typePlace")
         googleURL.append("&key=AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs")
 
+        Log.e("URL",googleURL.toString())
         return googleURL.toString()
     }
 
@@ -457,7 +533,6 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         googleURL.append("&mode=$travel")
         googleURL.append("&key=AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs")
 
-        Log.e("URL",googleURL.toString())
         return googleURL.toString()
     }
 
@@ -481,7 +556,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         }
         googleURL.append("&mode=$travel")
         googleURL.append("&key=AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs")
-
+        Log.e("URL",googleURL.toString())
         return googleURL.toString()
     }
 
@@ -498,13 +573,14 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
                 val latLng = LatLng(currentLat,currentLong)
                 val markerOptions = MarkerOptions().position(latLng).title("Your position").icon(com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(
-                    com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_GREEN))
+                    com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_BLUE))
 
                 marker = mMap!!.addMarker(markerOptions)
-
                 mMap!!.moveCamera(com.google.android.gms.maps.CameraUpdateFactory.newLatLng(latLng))
                 mMap!!.animateCamera(com.google.android.gms.maps.CameraUpdateFactory.zoomTo(11f))
+
                 if (!nearbySearched) {
+
                     nearbyPlace(list)
                     nearbySearched = true
                 }

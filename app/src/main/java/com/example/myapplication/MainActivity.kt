@@ -10,7 +10,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.example.myapplication.database.DataEntity
 import com.example.myapplication.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity(), Communicator {
+class MainActivity : AppCompatActivity(){
 
     private lateinit var binding: ActivityMainBinding
 
@@ -32,9 +32,5 @@ class MainActivity : AppCompatActivity(), Communicator {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
-    }
-
-    override fun passDataCom(list: DataEntity) {
-        TODO("Not yet implemented")
     }
 }

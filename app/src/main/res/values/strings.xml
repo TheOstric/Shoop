@@ -12,6 +12,9 @@
     <string name="distanza">Distanza</string>
     <string name="durata_database">Durata database</string>
     <string name="mezzo_di_trasporto">Mezzo di trasporto</string>
+    <string name="errori">Errori</string>
+    <string name="info">Info</string>
+    <string name="durata">Durata</string>
 
     <string-array name="distances_array">
         <item>500m</item>
