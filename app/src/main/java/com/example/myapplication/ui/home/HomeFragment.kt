@@ -3,8 +3,10 @@ package com.example.myapplication.ui.home
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.media.session.PlaybackState
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +15,11 @@ import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.ItemTouchHelper.*
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.MainListAdapter
 import com.example.myapplication.MapsActivity
 import com.example.myapplication.R
@@ -38,7 +45,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
     private val binding get() = _binding!!
 
     //variabili usate per usare la listView e pulsanti presente nel fragment
-    private lateinit var listView: ListView
+    //private lateinit var listView: ListView
     private lateinit  var buttonOne: Button
     private lateinit var buttonTwo: Button
     private lateinit  var buttonThree: Button
@@ -54,6 +61,11 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
 
     //lista di stringhe usata per contenere gli elementi che sono stati scritti sulle varie liste
     private val shoppingList : MutableList<String> = ArrayList()
+    private val positionList : MutableList<Int> = ArrayList()
+
+    private lateinit var linearLayoutManager: LinearLayoutManager
+    private lateinit var recyclerView: RecyclerView
+    private var itemTouchHelper: ItemTouchHelper? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -61,9 +73,9 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         savedInstanceState: Bundle?
     ): View {
 
-
         //inizializzazione del layout del fragment e delle sue componenti
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
+
         val root: View = binding.root
 
         return root
@@ -73,10 +85,34 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        listView = binding.listViewMain
+        recyclerView = binding.recyclerViewMain
+        linearLayoutManager = LinearLayoutManager(this.context)
+        recyclerView.layoutManager = linearLayoutManager
+
+        val services = ArrayList<Service>()
+        services.add(Service(R.drawable.ic_market,"Supermercato",R.drawable.radius))
+        services.add(Service(R.drawable.ic_pharma,"Farmacia",R.drawable.radius_teal))
+        services.add(Service(R.drawable.ic_gpl,"Benzinaio",R.drawable.radius_gas))
+        services.add(Service(R.drawable.ic_hospital,"Ospedale",R.drawable.radius_hosp))
+
+        list.add("supermarket")
+        list.add("pharmacy")
+        list.add("gas_station")
+        list.add("hospital")
+
+        //listView = binding.listViewMain
         buttonOne = binding.mainButton1
         buttonTwo = binding.mainButton2
         buttonThree = binding.mainButton3
+
+        //buttonOne.setBackgroundColor(R.color.black)
+
+        val myAdapter =
+            this.context?.let { RecyclerViewAdapter(services,shoppingList,list, it, layoutInflater) }
+        recyclerView.adapter = myAdapter
+        val callback: ReorderHelper? = myAdapter?.let { ReorderHelper(it) }
+        itemTouchHelper = callback?.let { ItemTouchHelper(it) }
+        itemTouchHelper?.attachToRecyclerView(recyclerView)
 
         //inizializzazione del ModelView usato come interfaccia per interagire con il database
         mViewModel = activity?.let { ViewModelProvider(it) }?.get(ViewModel::class.java)!!
@@ -98,7 +134,7 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         shoppingList.add("")
         shoppingList.add("")
 
-        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context?.applicationContext)
+        val sharedPref = PreferenceManager.getDefaultSharedPreferences(context?.applicationContext)
         val marketPref = sharedPref.getString("market","")
         val pharmacyPref = sharedPref.getString("pharmacy","")
         val gasPref = sharedPref.getString("gastation","")
@@ -139,23 +175,20 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         }
 
         //inizializzazione della listView e dell'adapter
-        list.add("Supermercato")
-        list.add("Farmacia")
-        list.add("Benzinaio")
-        list.add("Ospedale")
-        val adapter = MainListAdapter(this.context, R.layout.list_item_main, list)
 
-        listView.adapter = adapter
+        //val adapter = MainListAdapter(this.context, R.layout.list_item_main, list)
+
+        //listView.adapter = adapter
 
         //registrazione di un listener per visualizzare un alertDialog dove poter inserire la lista della spesa per poi salvarla nelle preferenze
-        listView.onItemClickListener = AdapterView.OnItemClickListener { parent, view, position, id ->
+        /*recyclerView.onItemClickListener = AdapterView.OnItemClickListener { parent, view, position, id ->
             onItemClick(shoppingList, list, position)
-        }
+        }*/
 
         //registrazione di un listener per visualizzare un alertDialog contenente gli elementi inseriti nell'elemento selezionato della RecyclerView
-        listView.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, view, position, id ->
+        /*listView.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, view, position, id ->
             onItemLongClick(shoppingList,list,position)
-        }
+        }*/
 
         //registrazione di un listener per salvare i dati inseriti nel database
         buttonTwo.setOnClickListener {
@@ -174,6 +207,14 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         intent.putExtra("pharmacy",shoppingList[1])
         intent.putExtra("gas", shoppingList[2])
         intent.putExtra("hospital",shoppingList[3])
+        intent.putExtra("0", list[0])
+        intent.putExtra("1", list[1])
+        intent.putExtra("2", list[2])
+        intent.putExtra("3", list[3])
+        Log.e("1", list[0])
+        Log.e("2", list[1])
+        Log.e("3", list[2])
+        Log.e("4", list[3])
         startActivity(intent)
     }
 
@@ -201,68 +242,6 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         if (!exc) {
             Toast.makeText(this.context, "Salvato.", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun onItemClick(shopping_list: MutableList<String>,
-                            list: MutableList<String>, position: Int) {
-        val alertDialog = AlertDialog.Builder(this.context).create()
-        val dialogView = layoutInflater.inflate(R.layout.service_dialog, null)
-        alertDialog.setView(dialogView)
-        val editText = dialogView.rootView.findViewById<EditText>(R.id.edittext_dialog)
-        when (list[position]) {
-            "Supermercato" -> {
-                alertDialog.setTitle("Lista supermercato")
-                alertDialog.setIcon(R.drawable.ic_market)
-                alertDialog.setCancelable(true)
-                editText.hint = "Inserire la lista per il supermercato..."
-                if (shopping_list[0] != "") editText.setText(shopping_list[0])
-            }
-            "Farmacia" -> {
-                alertDialog.setTitle("Lista farmacia")
-                alertDialog.setIcon(R.drawable.ic_info)
-                alertDialog.setCancelable(true)
-                editText.hint = "Inserire la lista per il farmacia..."
-                if (shopping_list[1] != "") editText.setText(shopping_list[1])
-            }
-
-            "Benzinaio" -> {
-                alertDialog.setTitle("Lista benzinaio")
-                alertDialog.setIcon(R.drawable.ic_gpl)
-                alertDialog.setCancelable(true)
-                editText.hint = "Inserire la lista per il benzinaio..."
-                if (shopping_list[2] != "") editText.setText(shopping_list[2])
-            }
-            "Ospedale" -> {
-                alertDialog.setTitle("Lista ospedale")
-                alertDialog.setIcon(R.drawable.ic_hospital)
-                alertDialog.setCancelable(true)
-                editText.hint = "Inserire la lista per l'ospedale..."
-                if (shopping_list[3] != "") editText.setText(shopping_list[3])
-            }
-        }
-        //setto il pulsante positivo OK in modo che mi salvi le cose scritte nella lista all'interno
-        //dell'array shopping_list, in base a quale pulsante è stato cliccato avrà un indice diverso nell'array
-        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Ok") { dialog, which ->
-            val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(
-                context?.applicationContext
-            )
-            val editor = sharedPref.edit()
-            when (list[position]) {
-                "Supermercato" ->{ shopping_list[0] = editText.text.toString()
-                    editor.putString("market",editText.text.toString()).apply() }
-                "Farmacia" -> { shopping_list[1] = editText.text.toString()
-                    editor.putString("pharmacy",editText.text.toString()).apply() }
-                "Benzinaio" ->{ shopping_list[2] = editText.text.toString()
-                    editor.putString("gastation",editText.text.toString()).apply() }
-                "Ospedale" -> { shopping_list[3] = editText.text.toString()
-                    editor.putString("hospital",editText.text.toString()).apply() }
-            }
-        }
-        alertDialog.setButton(
-            AlertDialog.BUTTON_NEGATIVE,
-            "Cancel"
-        ) { dialog, which -> alertDialog.dismiss() }
-        alertDialog.show()
     }
 
     private fun onItemLongClick(shopping_list: MutableList<String>,

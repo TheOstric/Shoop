@@ -1,7 +1,6 @@
 package com.example.myapplication
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.IntentSender.SendIntentException
@@ -12,7 +11,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
-import android.util.Log
 import android.widget.Button
 import android.widget.PopupMenu
 import android.widget.Toast
@@ -33,13 +31,9 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.gms.tasks.Task
-import com.google.android.material.internal.ContextUtils.getActivity
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Executor
-import kotlin.properties.Delegates
+import java.util.concurrent.locks.ReentrantLock
 
 
 class MapsActivity : FragmentActivity(), OnMapReadyCallback,
@@ -67,7 +61,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
     internal lateinit var currentPlacesModel: PlacesModel
     private lateinit var mExecutor: Executor
 
-    val pointsList = ArrayList<Double>()
+    val pointsList = ArrayList<String>()
     val driving = ArrayList<String>()
 
     lateinit var checkedItems: BooleanArray
@@ -76,13 +70,18 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
     val pBlockingQueue = ArrayBlockingQueue<PolylineOptions>(1)
 
-    val list: HashMap<String,String> = HashMap()
+    val list: ArrayList<String> = arrayListOf("","","","")
 
     lateinit var errorButton: Button
 
     private var nearbySearched: Boolean = false
 
-    private var durations: HashMap<String,String> = HashMap()
+    private var durations: LinkedHashMap<String,String> = LinkedHashMap()
+
+    private var listaPos: ArrayList<String> = ArrayList()
+
+    private val lock = ReentrantLock()
+    private val condition = lock.newCondition()
 
     //variable used to determine whenever a distance choosed is not enough to discover the nearest service required
     var error = ""
@@ -104,33 +103,37 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         val gas = intent.extras?.getString("gas")
         val hospital = intent.extras?.getString("hospital")
 
+        listaPos.add(intent.extras?.getString("0")!!)
+        listaPos.add(intent.extras?.getString("1")!!)
+        listaPos.add(intent.extras?.getString("2")!!)
+        listaPos.add(intent.extras?.getString("3")!!)
 
         if (market != "") {
-            list["supermarket"] = market!!
+            list[listaPos.indexOf("supermarket")] = market!!
             count += 1
         } else {
-            list["supermarket"] = ""
+            list[listaPos.indexOf("supermarket")] = ""
         }
 
         if (pharmacy != "") {
-            list["pharmacy"] = pharmacy!!
+            list[listaPos.indexOf("pharmacy")] = pharmacy!!
             count += 1
         } else {
-            list["pharmacy"] = ""
+            list[listaPos.indexOf("pharmacy")] = ""
         }
 
         if (gas != "") {
-            list["gas_station"] = gas!!
+            list[listaPos.indexOf("gas_station")] = gas!!
             count += 1
         } else {
-            list["gas_station"] = ""
+            list[listaPos.indexOf("gas_station")] = ""
         }
 
         if (hospital != "") {
-            list["hospital"] = hospital!!
+            list[listaPos.indexOf("hospital")] = hospital!!
             count += 1
         } else {
-            list["hospital"] = ""
+            list[listaPos.indexOf("hospital")] = ""
         }
 
         //Initialize service
@@ -169,7 +172,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         }
 
         driveButton.setOnClickListener {
-            if (pointsList.size > 2){
+            if (pointsList.size > 0){
                 val URL = getDrivingUrl()
                 val location: Uri = Uri.parse(URL)
                 val mapIntent = Intent(Intent.ACTION_VIEW, location)
@@ -242,7 +245,8 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
             popupMenu.show()
         }
     }
-    private fun nearbyPlace (typePlace: HashMap<String,String>){
+    @RequiresApi(Build.VERSION_CODES.P)
+    private fun nearbyPlace (typePlace: ArrayList<String>){
 
         //Remove all markers on the map
        // mMap?.clear()
@@ -250,123 +254,130 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         var posLong: Double
         var srcLat = currentLat
         var srcLng = currentLong
-        pointsList.add(srcLat)
-        pointsList.add(srcLng)
         var arrayList: ArrayList<Double>
         var e = false
         var c = 0
 
+        val t1 = Thread{
+            for (j in listaPos.indices) {
 
-        for (j in typePlace.keys) {
-            if (typePlace[j] != ""){
+                if (typePlace[j] != ""){
 
-                //build URL request base on location
-                val url = getUrl(srcLat, srcLng, j)
-                val destinations: MutableList<String> = ArrayList()
-                val names: MutableList<String> = ArrayList()
-                val latLngs: MutableList<LatLng> = ArrayList()
+                    //build URL request base on location
+                    val url = getUrl(srcLat, srcLng, listaPos[j])
+                    val destinations: MutableList<String> = ArrayList()
+                    val names: MutableList<String> = ArrayList()
+                    val latLngs: MutableList<LatLng> = ArrayList()
 
+                    val t = Thread {
 
-                mService.getNearbyPlaces(url)
-                    .enqueue(object : Callback<PlacesModel> {
-                        @RequiresApi(Build.VERSION_CODES.P)
-                        override fun onResponse(
-                            call: Call<PlacesModel>,
-                            response: Response<PlacesModel>
-                        ) {
-                            currentPlacesModel = response.body()!!
-
-                            if (response.isSuccessful) {
-
-                                if (!response.body()!!.results!!.isEmpty()) {
-                                    for (i in response.body()!!.results!!.indices) {
-                                        val googlePlace = response.body()!!.results!![i]
-
-                                        if (googlePlace.opening_hours?.open_now == true) {
-                                            val lat = googlePlace.geometry!!.location!!.lat
-                                            val long = googlePlace.geometry!!.location!!.lng
-                                            val placeName = googlePlace.name
+                        val response = mService.getNearbyPlaces(url).execute()
 
 
-                                            val dest = StringBuilder(lat.toString()).append("%2C")
-                                                .append(long.toString())
+                        currentPlacesModel = response.body()!!
 
-                                            destinations.add(dest.toString())
-                                            if (placeName != null) {
-                                                names.add(placeName)
-                                            }
-                                            latLngs.add(LatLng(lat, long))
+                        if (response.isSuccessful) {
+
+                            if (response.body()!!.results!!.isNotEmpty()) {
+                                for (i in response.body()!!.results!!.indices) {
+                                    val googlePlace = response.body()!!.results!![i]
+
+                                    if (googlePlace.opening_hours?.open_now == true) {
+                                        val lat = googlePlace.geometry!!.location!!.lat
+                                        val long = googlePlace.geometry!!.location!!.lng
+                                        val placeName = googlePlace.name
+
+
+                                        val dest = StringBuilder(lat.toString()).append("%2C")
+                                            .append(long.toString())
+
+                                        destinations.add(dest.toString())
+                                        if (placeName != null) {
+                                            names.add(placeName)
                                         }
+                                        latLngs.add(LatLng(lat, long))
                                     }
-                                    if(destinations.isEmpty()){
-                                        e = true
-                                        error += j + ": tutti i negozi di questo tipo, entro la distanza selezionata, sono chiusi."
-                                    }
-                                } else {
-                                    e = true
-                                    error += j + ": non ci sono negozi di questo tipo nell'area della distanza selezionata.\n" +
-                                            " Si prega di selezionare un'altra distanza e ricalcolare l'itinerario.\n"
                                 }
+                                if (destinations.isEmpty()) {
+                                    e = true
+                                    error += listaPos[j] + ": tutti i negozi di questo tipo, entro la distanza selezionata, sono chiusi."
+                                }
+                            } else {
+                                e = true
+                                error += listaPos[j] + ": non ci sono negozi di questo tipo nell'area della distanza selezionata.\n" +
+                                        " Si prega di selezionare un'altra distanza e ricalcolare l'itinerario.\n"
+                            }
 
-                                if (!e) {
-                                    val thread = Thread {
-                                        getDestination(destinations, names, latLngs, srcLat, srcLng)
-                                    }
-                                    thread.start()
 
-                                    arrayList = blockingQueue.take()
-                                    posLat = arrayList[0]
-                                    posLong = arrayList[1]
+                            if (!e) {
+                                val thread = Thread {
+                                    getDestination(destinations, names, latLngs, srcLat, srcLng)
+                                }
+                                thread.start()
 
-                                    val markerOptions = MarkerOptions()
-                                    val destlatlong = LatLng(posLat, posLong)
-                                    markerOptions.position(destlatlong)
-                                    markerOptions.title(names[latLngs.indexOf(destlatlong)])
-                                    markerOptions.icon(
-                                        com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(
-                                            com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_GREEN
-                                        )
+                                arrayList = blockingQueue.take()
+                                posLat = arrayList[0]
+                                posLong = arrayList[1]
+
+                                val markerOptions = MarkerOptions()
+                                val destlatlong = LatLng(posLat, posLong)
+                                markerOptions.position(destlatlong)
+                                markerOptions.title(names[latLngs.indexOf(destlatlong)])
+                                markerOptions.icon(
+                                    com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(
+                                        com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_GREEN
                                     )
-                                    //Add marker to map
+                                )
+
+                                this@MapsActivity.runOnUiThread{
                                     mMap!!.addMarker(markerOptions)
                                     //Move camera to adapt view
                                     mMap!!.moveCamera(CameraUpdateFactory.newLatLng(destlatlong))
                                     mMap!!.animateCamera(CameraUpdateFactory.zoomTo(17f))
-
-                                    val thread1 = Thread {
-                                        drawPath(srcLat, srcLng, posLat, posLong)
-                                    }
-                                    thread1.start()
-
-
-                                    val poly = pBlockingQueue.take()
-                                    mMap!!.addPolyline(poly)
-
-                                    srcLat = posLat
-                                    srcLng = posLong
-
-                                    pointsList.add(srcLat)
-                                    pointsList.add(srcLng)
-                                    driving.add("${srcLat},${srcLng}")
-                                    c += 1
-                                    if (c == count){
-                                        showDurations()
-                                    }
-
-                                } else {
-                                    e = false
                                 }
+                                //Add marker to map
+
+
+                                val thread1 = Thread {
+                                    drawPath(srcLat, srcLng, posLat, posLong)
+                                }
+                                thread1.start()
+
+
+                                val poly = pBlockingQueue.take()
+                                this@MapsActivity.runOnUiThread {
+                                    mMap!!.addPolyline(poly)
+                                }
+
+                                srcLat = posLat
+                                srcLng = posLong
+
+
+                                driving.add("${srcLat},${srcLng}")
+                                c += 1
+                                if (c == count) {
+                                    showDurations()
+                                }
+
+                            } else {
+                                e = false
                             }
+
                         }
-                        override fun onFailure(call: Call<PlacesModel>, t: Throwable) {
-                            Toast.makeText(baseContext, "" + t.message, Toast.LENGTH_SHORT).show()
-                        }
-                    })
+                        lock.lock()
+                        condition.signal()
+                        lock.unlock()
+                    }
+
+                    t.start()
+
+                    lock.lock()
+                    condition.await()
+                    lock.unlock()
+                }
             }
-
         }
-
-
+        t1.start()
     }
 
     private fun showDurations() {
@@ -438,22 +449,26 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         var duration: Int? = null
         var durationString: String? = null
         var destName: String = ""
+        var destAddresses: ArrayList<String>?
+        var pos = 0
 
         val insideRes = ArrayList<Double>()
         val response = mService.getDuration(url).execute()
         if (response.body()!!.rows!!.isNotEmpty()) {
-
+            destAddresses = response.body()!!.destination_addresses as ArrayList<String>?
             for (i in response.body()!!.rows!!.indices) {
                 val dist = response.body()!!.rows!![i]
 
                 for (j in dist.elements!!.indices) {
                     if (duration == null) {
+                        pos = j
                         duration = dist.elements!![j].duration?.value
                         durationString = dist.elements!![j].duration?.text
                         latlng = latLngs[j]
                         destName = names[j]
                     } else {
                         if (duration > dist.elements!![j].duration?.value!!) {
+                            pos = j
                             duration = dist.elements!![j].duration?.value
                             durationString = dist.elements!![j].duration?.text
                             destName = names[j]
@@ -467,6 +482,34 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
             insideRes.add(latlng.longitude)
 
             durations[destName] = durationString!!
+
+            val destAddr = destAddresses?.get(pos)?.split(",")
+            var refactAddr = ""
+            if (destAddr != null) {
+                for (i in destAddr.indices) {
+                    if( destAddr[i] != "") {
+                        val part = destAddr[i].split(" ")
+                        if (part[0] != "")
+                            refactAddr += part[0]
+                        else
+                            refactAddr += part[1]
+                        for (j in part.indices) {
+                            if (part[0] != "") {
+                                if (j != 0)
+                                    refactAddr += "+" + part[j]
+                            }
+                            else {
+                                if (j != 0 && j != 1)
+                                    refactAddr += "+" + part[j]
+                            }
+                        }
+                        if (i != destAddr.size-1)
+                            refactAddr += ","
+                    }
+                }
+            }
+
+            pointsList.add(refactAddr)
             blockingQueue.add(insideRes)
         } else {
             latlng = LatLng(0.0,0.0)
@@ -493,7 +536,6 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         googleURL.append("&type=$typePlace")
         googleURL.append("&key=AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs")
 
-        Log.e("URL",googleURL.toString())
         return googleURL.toString()
     }
 
@@ -507,15 +549,12 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         val googleURL = StringBuilder("https://www.google.com/maps/dir/?api=1")
         googleURL.append("&travelmode=$travel")
         googleURL.append("&dir_action=navigate")
-        googleURL.append("&origin=${pointsList[0]},${pointsList[1]}")
-        googleURL.append("&destination=${pointsList[pointsList.size-2]},${pointsList[pointsList.size-1]}")
-        if( pointsList.size > 4) {
-            googleURL.append("&waypoints=${driving[0]}")
-            for (i in driving.indices) {
-                if (i != 0 && i != driving.size - 1)
-                    googleURL.append("|${driving[i]}")
-            }
-        }
+        googleURL.append("&destination=${pointsList[pointsList.size-1]}")
+        googleURL.append("&waypoints=")
+        for (i in 0..pointsList.size-3)
+            googleURL.append("${pointsList[i]}|")
+
+        googleURL.append(pointsList[pointsList.size-2])
 
         return googleURL.toString()
     }
@@ -556,12 +595,12 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         }
         googleURL.append("&mode=$travel")
         googleURL.append("&key=AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs")
-        Log.e("URL",googleURL.toString())
         return googleURL.toString()
     }
 
     private fun buildLocationCallback(){
         locationCallback = object : LocationCallback(){
+            @RequiresApi(Build.VERSION_CODES.P)
             override fun onLocationResult(p0: LocationResult?){
                 lastLocation = p0!!.lastLocation
 

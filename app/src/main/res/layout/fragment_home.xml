@@ -7,11 +7,11 @@
     android:layout_height="match_parent"
     tools:context=".ui.home.HomeFragment">
 
-    <ListView
+    <androidx.recyclerview.widget.RecyclerView
         app:layout_constraintTop_toTopOf="parent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/list_view_main"
+        android:id="@+id/recycler_view_main"
         android:background="@color/md_grey_400"
         android:paddingRight="20dp"
         android:paddingEnd="20dp"
