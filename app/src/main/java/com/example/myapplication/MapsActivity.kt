@@ -49,9 +49,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
     private lateinit var lastLocation : Location
     private var marker: Marker? = null
-    private var polyline: Polyline? = null
 
-    //Location
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var locationRequest: LocationRequest
     private lateinit var locationCallback: LocationCallback
@@ -540,14 +538,9 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
     }
 
     private fun getDrivingUrl(): String {
-        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        var travel = sharedPref.getString("travelMode","empty")
-
-        if (travel == "empty")
-            travel = "driving"
 
         val googleURL = StringBuilder("https://www.google.com/maps/dir/?api=1")
-        googleURL.append("&travelmode=$travel")
+        googleURL.append("&travelmode=driving")
         googleURL.append("&dir_action=navigate")
         googleURL.append("&destination=${pointsList[pointsList.size-1]}")
         googleURL.append("&waypoints=")
@@ -560,27 +553,17 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
     }
 
     private fun getDirectionUrl(currentLat: Double, currentLong: Double, destLat: Double, destLng: Double): String {
-        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        var travel = sharedPref.getString("travelMode","empty")
-
-        if (travel == "empty")
-            travel = "driving"
 
         val googleURL = StringBuilder("https://maps.googleapis.com/maps/api/directions/json")
         googleURL.append("?origin=$currentLat,$currentLong")
         googleURL.append("&destination=$destLat,$destLng")
-        googleURL.append("&mode=$travel")
+        googleURL.append("&mode=driving")
         googleURL.append("&key=AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs")
 
         return googleURL.toString()
     }
 
     private fun getDistanceUrl(currentLat: Double, currentLong: Double, destCoordinates: MutableList<String>): String {
-        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        var travel = sharedPref.getString("travelMode","empty")
-
-        if (travel == "empty")
-            travel = "driving"
 
         val googleURL = StringBuilder("https://maps.googleapis.com/maps/api/distancematrix/json")
         googleURL.append("?units=imperial")
@@ -593,7 +576,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
             else
                 googleURL.append(currentItem)
         }
-        googleURL.append("&mode=$travel")
+        googleURL.append("&mode=driving")
         googleURL.append("&key=AIzaSyAEoHSbl8EBnnzKRIMqz7usULWu0c2DaSs")
         return googleURL.toString()
     }
