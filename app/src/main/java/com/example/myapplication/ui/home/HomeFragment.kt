@@ -1,12 +1,9 @@
 package com.example.myapplication.ui.home
 
 import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
-import android.media.session.PlaybackState
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,15 +14,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.ItemTouchHelper.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.myapplication.MainListAdapter
 import com.example.myapplication.MapsActivity
 import com.example.myapplication.R
 import com.example.myapplication.database.DataEntity
 import com.example.myapplication.databinding.FragmentHomeBinding
-import com.example.myapplication.model.ViewModel
+import com.example.myapplication.database.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -174,22 +169,6 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
             buttonThree.isEnabled = true
         }
 
-        //inizializzazione della listView e dell'adapter
-
-        //val adapter = MainListAdapter(this.context, R.layout.list_item_main, list)
-
-        //listView.adapter = adapter
-
-        //registrazione di un listener per visualizzare un alertDialog dove poter inserire la lista della spesa per poi salvarla nelle preferenze
-        /*recyclerView.onItemClickListener = AdapterView.OnItemClickListener { parent, view, position, id ->
-            onItemClick(shoppingList, list, position)
-        }*/
-
-        //registrazione di un listener per visualizzare un alertDialog contenente gli elementi inseriti nell'elemento selezionato della RecyclerView
-        /*listView.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, view, position, id ->
-            onItemLongClick(shoppingList,list,position)
-        }*/
-
         //registrazione di un listener per salvare i dati inseriti nel database
         buttonTwo.setOnClickListener {
             saveData(shoppingList)
@@ -211,10 +190,6 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         intent.putExtra("1", list[1])
         intent.putExtra("2", list[2])
         intent.putExtra("3", list[3])
-        Log.e("1", list[0])
-        Log.e("2", list[1])
-        Log.e("3", list[2])
-        Log.e("4", list[3])
         startActivity(intent)
     }
 
@@ -267,5 +242,15 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        val sharedPref = PreferenceManager.getDefaultSharedPreferences(context?.applicationContext)
+        sharedPref.edit().remove("market").apply()
+        sharedPref.edit().remove("pharmacy").apply()
+        sharedPref.edit().remove("gastation").apply()
+        sharedPref.edit().remove("hospital").apply()
     }
 }

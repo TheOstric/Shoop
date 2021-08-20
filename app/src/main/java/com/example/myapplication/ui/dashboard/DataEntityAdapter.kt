@@ -1,24 +1,16 @@
 package com.example.myapplication.ui.dashboard
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.media.Image
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
-import android.widget.Toast
-import androidx.core.content.ContextCompat.startActivity
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
-import com.example.myapplication.MapsActivity
 import com.example.myapplication.R
 import com.example.myapplication.database.DataEntity
 import com.example.myapplication.databinding.RecyclerviewItemBinding
-import com.example.myapplication.model.ViewModel
 
 class DataEntityAdapter(private val context: Context?) : RecyclerView.Adapter<DataEntityAdapter.DataEntityHolder>() {
     private var mInflater: LayoutInflater = LayoutInflater.from(context)

@@ -3,8 +3,6 @@ package com.example.myapplication.database
 import android.app.Application
 import androidx.lifecycle.LiveData
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class DataRepository(application: Application, viewModelScope: CoroutineScope) {
     private var shoppingDao: ShoppingDao
@@ -24,10 +22,6 @@ class DataRepository(application: Application, viewModelScope: CoroutineScope) {
 
     suspend fun maxId() : Int {
         return shoppingDao.getMaxId()
-    }
-
-    suspend fun deleteByDate(time: Double){
-        shoppingDao.deleteByDate(time)
     }
 
     suspend fun deleteById(id: Int){

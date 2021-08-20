@@ -354,10 +354,12 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                                 driving.add("${srcLat},${srcLng}")
                                 c += 1
                                 if (c == count) {
-                                    showDurations()
+                                    runOnUiThread{
+                                    showDurations() }
                                 }
 
                             } else {
+                                c += 1
                                 e = false
                             }
 

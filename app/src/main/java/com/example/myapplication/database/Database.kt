@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import java.util.*
 
 @Database(entities = arrayOf(DataEntity::class), version = 5)
-@TypeConverters(Converters::class)
 abstract class ShoopDatabase : RoomDatabase() {
     abstract fun shoppingDao() : ShoppingDao
 
@@ -27,17 +26,14 @@ abstract class ShoopDatabase : RoomDatabase() {
                     context,
                     ShoopDatabase::class.java,
                     "shoop")
-                    .addCallback(roomDatabaseCallback(coroutineScope, context))
-                    .fallbackToDestructiveMigration() //APPROFONDIRE L'ARGOMENTO
+                    .addCallback(RoomDatabaseCallback(coroutineScope, context))
                     .build()
             }
             return INSTANCE as ShoopDatabase
         }
     }
 
-    //USARE EVENTUALMENTE PER CANCELLARE I DATI PIù VECCHI DI UN TOT
-
-    private class roomDatabaseCallback(private val scope: CoroutineScope, context: Context ): RoomDatabase.Callback() {
+    private class RoomDatabaseCallback(private val scope: CoroutineScope, context: Context ): RoomDatabase.Callback() {
 
             val context = context
             override fun onOpen(db: SupportSQLiteDatabase) {

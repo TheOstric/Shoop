@@ -5,7 +5,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.databinding.ActivityDbentryBinding
-import com.example.myapplication.model.ViewModel
+import com.example.myapplication.database.ViewModel
 import kotlinx.coroutines.launch
 
 class DbEntryActivity : AppCompatActivity() {
