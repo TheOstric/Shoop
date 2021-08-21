@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="radius">
+        <item>500m</item>
+        <item>1km</item>
+        <item>5km</item>
+        <item>10km</item>
+    </string-array>
+
+    <string-array name="radius_values">
+        <item>500</item>
+        <item>1000</item>
+        <item>5000</item>
+        <item>10000</item>
+    </string-array>
+
+    <string-array name="time">
+        <item>3gg</item>
+        <item>5gg</item>
+        <item>10gg</item>
+        <item>15gg</item>
+    </string-array>
+
+    <string-array name="time_values">
+        <item>259200.0</item>
+        <item>432000.0</item>
+        <item>864000.0</item>
+        <item>1296000.0</item>
+    </string-array>
+</resources>

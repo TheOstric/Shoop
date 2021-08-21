@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
+import android.util.Log
 import android.widget.Button
 import android.widget.PopupMenu
 import android.widget.Toast
@@ -448,8 +449,8 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         lateinit var latlng: LatLng
         var duration: Int? = null
         var durationString: String? = null
-        var destName: String = ""
-        var destAddresses: ArrayList<String>?
+        var destName = ""
+        val destAddresses: ArrayList<String>?
         var pos = 0
 
         val insideRes = ArrayList<Double>()

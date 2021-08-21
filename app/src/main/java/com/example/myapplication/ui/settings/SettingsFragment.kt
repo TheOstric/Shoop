@@ -1,124 +1,47 @@
 package com.example.myapplication.ui.settings
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.Spinner
 import android.widget.Toast
-import androidx.appcompat.widget.TooltipCompat
-import androidx.fragment.app.Fragment
+import androidx.preference.EditTextPreference
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import com.example.myapplication.R
-import com.example.myapplication.databinding.FragmentSettingsBinding
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-class SettingsFragment: Fragment(R.layout.fragment_settings) {
+class SettingsFragment: PreferenceFragmentCompat() {
 
-    private var _binding: FragmentSettingsBinding? = null
-    // This property is only valid between onCreateView and
-    // onDestroyView.
-    private val binding get() = _binding!!
-    private lateinit var spinner: Spinner
-    private lateinit var timeSpinner: Spinner
-    private lateinit var travelSpinner: Spinner
+    private lateinit var mListPreference: ListPreference
+    private lateinit var mTimeListPreference: ListPreference
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        setPreferencesFromResource(R.xml.preferences, rootKey)
 
+        mListPreference = findPreference("radius")!!
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+        mListPreference.title = "Distanza (${ mListPreference.entry})"
 
-        _binding = FragmentSettingsBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-        spinner= binding.distancesSpinner
-        timeSpinner = binding.timeSpinner
-
-        val infoButtonOne = binding.fab
-        TooltipCompat.setTooltipText(infoButtonOne, "Distanza massima entro cui vengono cercati i servizi selezionati.");
-
-        val infoButtonTwo = binding.infoDb
-        TooltipCompat.setTooltipText(infoButtonTwo, "Permanenza massima degli elementi nel database.");
-
-        ArrayAdapter.createFromResource(
-                this.requireContext(),
-                R.array.distances_array,
-                android.R.layout.simple_spinner_item
-            ).also { adapter -> adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                spinner.adapter = adapter
+        mListPreference.setOnPreferenceChangeListener { preference, newValue ->
+            if (preference is ListPreference) {
+                val index = preference.findIndexOfValue(newValue.toString())
+                val entry = preference.entries[index]
+                preference.title = "Distanza ($entry)"
             }
-
-        ArrayAdapter.createFromResource(
-            this.requireContext(),
-            R.array.time_array,
-            android.R.layout.simple_spinner_item
-        ).also { adapter -> adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            timeSpinner.adapter = adapter
+            true
         }
 
-        val chosedItem = getPersistedItem()
-        if ( chosedItem[0] != -1 ) {
-            spinner.setSelection(chosedItem[0])
-        } else {
-            spinner.setSelection(0)
-        }
-        if ( chosedItem[1] != -1 ) {
-            timeSpinner.setSelection(chosedItem[1])
-        } else {
-            timeSpinner.setSelection(0)
-        }
+        mTimeListPreference = findPreference("time")!!
 
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                setPersistedItem(position)
+        mTimeListPreference.title = "Durata database (${ mTimeListPreference.entry})"
+
+        mTimeListPreference.setOnPreferenceChangeListener { preference, newValue ->
+            if (preference is ListPreference) {
+                val index = preference.findIndexOfValue(newValue.toString())
+                val entry = preference.entries[index]
+                preference.title = "Durata database ($entry)"
             }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                TODO("Not yet implemented")
-            }
+            true
         }
-
-        timeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                setPersistedTimeItem(position)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                TODO("Not yet implemented")
-            }
-        }
-
-        return root
     }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
-
-    private fun getPersistedItem(): ArrayList<Int>{
-        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(activity?.applicationContext)
-        val array = ArrayList<Int>()
-        array.add(sharedPref.getInt("posDistance",-1))
-        array.add(sharedPref.getInt("posTime",-1))
-        return array
-    }
-
-    private fun setPersistedItem(position: Int){
-        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(activity?.applicationContext)
-        val editor = sharedPref.edit()
-        editor.putInt("posDistance",position).apply()
-        editor.putString("radius",spinner.selectedItem.toString()).apply()
-    }
-
-    private fun setPersistedTimeItem(position: Int){
-        val sharedPref = androidx.preference.PreferenceManager.getDefaultSharedPreferences(activity?.applicationContext)
-        val editor = sharedPref.edit()
-        editor.putInt("posTime",position).apply()
-        editor.putString("time",timeSpinner.selectedItem.toString()).apply()
-    }
-
 }

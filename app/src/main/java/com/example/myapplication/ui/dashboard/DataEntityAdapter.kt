@@ -38,9 +38,7 @@ class DataEntityAdapter(private val context: Context?) : RecyclerView.Adapter<Da
                 intent.putExtra("gas",gas)
                 intent.putExtra("hospital",hosp)
                 intent.putExtra("identifier",current.id)
-                if (context != null) {
-                    context.startActivity(intent)
-                }
+                context?.startActivity(intent)
             }
         } else {
             holder.dateText.text = "No date"

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListPreference
+        app:key="radius"
+        app:title="Distanza"
+        app:summary="Distanza massima entro cui vengono cercati i servizi selezionati."
+        app:entries="@array/radius"
+        app:entryValues="@array/radius_values"
+        app:defaultValue="500"
+        app:persistent="true"
+        app:dialogTitle="Seleziona la distanza"
+        />
+
+    <ListPreference
+        app:key="time"
+        app:title="@string/durata_database"
+        app:summary="Permanenza massima degli elementi nel database."
+        app:entries="@array/time"
+        app:entryValues="@array/radius_values"
+        app:defaultValue="500"
+        android:persistent="true"
+        android:dialogTitle="Seleziona il tempo massimo"
+        />
+
+
+</PreferenceScreen>
