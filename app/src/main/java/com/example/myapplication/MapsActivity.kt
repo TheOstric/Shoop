@@ -193,7 +193,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
             } else {
                 // Add a checkbox list
                 if (market != null && pharmacy != null && gas != null && hospital != null) {
-                    val shopList = market.lines().plus(pharmacy.lines()).plus(gas.lines()).plus(hospital.lines())
+                    val shopList = "SUPERMERCATO".lines().plus(market.lines()).plus("\nFARMACIA\n").plus(pharmacy.lines()).plus("\nBENZINAIO\n").plus(gas.lines()).plus("\nOSPEDALE\n").plus(hospital.lines())
 
                     val array: Array<String> = shopList.toTypedArray()
 
@@ -248,7 +248,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
     private fun nearbyPlace (typePlace: ArrayList<String>){
 
         //Remove all markers on the map
-       // mMap?.clear()
+        // mMap?.clear()
         var posLat: Double
         var posLong: Double
         var srcLat = currentLat
@@ -356,7 +356,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                                 c += 1
                                 if (c == count) {
                                     runOnUiThread{
-                                    showDurations() }
+                                        showDurations() }
                                 }
 
                             } else {
@@ -689,7 +689,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
     }
 
     override fun onMyLocationButtonClick(): Boolean {
-       return true
+        return true
     }
 
     override fun onMyLocationClick(p0: Location) {

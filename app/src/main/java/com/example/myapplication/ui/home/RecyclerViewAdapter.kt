@@ -2,6 +2,7 @@ package com.example.myapplication.ui.home
 
 import android.app.AlertDialog
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,12 +17,7 @@ import com.example.myapplication.databinding.RecyclerviewItemBinding
 import java.util.*
 import kotlin.collections.ArrayList
 
-class RecyclerViewAdapter(private var entries: ArrayList<Service>, shoppingList: MutableList<String>, list: MutableList<String>, context: Context, layoutInflater: LayoutInflater ) : RecyclerView.Adapter<RecyclerViewAdapter.MyHolder>(), ReorderAdapter {
-
-    private val shoppingList = shoppingList
-    private val context = context
-    private val layoutInflater = layoutInflater
-    private val list = list
+class RecyclerViewAdapter(private var entries: ArrayList<Service>,private var shoppingList: MutableList<String>, private var list: MutableList<String>, private var context: Context, private var layoutInflater: LayoutInflater) : RecyclerView.Adapter<RecyclerViewAdapter.MyHolder>(), ReorderAdapter {
 
     override fun onCreateViewHolder(
         parent: ViewGroup,
@@ -33,6 +29,7 @@ class RecyclerViewAdapter(private var entries: ArrayList<Service>, shoppingList:
     }
 
     override fun onBindViewHolder(holder: MyHolder, position: Int) {
+
         val listItem = entries[position]
 
         holder.imageView.setImageResource(listItem.imageView)

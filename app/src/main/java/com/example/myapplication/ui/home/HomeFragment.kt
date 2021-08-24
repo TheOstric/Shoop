@@ -2,8 +2,10 @@ package com.example.myapplication.ui.home
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -56,11 +58,11 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
 
     //lista di stringhe usata per contenere gli elementi che sono stati scritti sulle varie liste
     private val shoppingList : MutableList<String> = ArrayList()
-    private val positionList : MutableList<Int> = ArrayList()
 
     private lateinit var linearLayoutManager: LinearLayoutManager
     private lateinit var recyclerView: RecyclerView
     private var itemTouchHelper: ItemTouchHelper? = null
+    private lateinit var sharedPref: SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -83,6 +85,9 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         recyclerView = binding.recyclerViewMain
         linearLayoutManager = LinearLayoutManager(this.context)
         recyclerView.layoutManager = linearLayoutManager
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(
+            context?.applicationContext
+        )
 
         val services = ArrayList<Service>()
         services.add(Service(R.drawable.ic_market,"Supermercato",R.drawable.radius))
@@ -100,12 +105,13 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         buttonTwo = binding.mainButton2
         buttonThree = binding.mainButton3
 
-        //buttonOne.setBackgroundColor(R.color.black)
-
         val myAdapter =
             this.context?.let { RecyclerViewAdapter(services,shoppingList,list, it, layoutInflater) }
         recyclerView.adapter = myAdapter
-        val callback: ReorderHelper? = myAdapter?.let { ReorderHelper(it) }
+        val callback: ReorderHelper? = myAdapter?.let { context?.let { it1 ->
+            ReorderHelper(it, shoppingList, list,
+                it1, layoutInflater  )
+        } }
         itemTouchHelper = callback?.let { ItemTouchHelper(it) }
         itemTouchHelper?.attachToRecyclerView(recyclerView)
 
@@ -129,29 +135,29 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         shoppingList.add("")
         shoppingList.add("")
 
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(context?.applicationContext)
-        val marketPref = sharedPref.getString("market","")
-        val pharmacyPref = sharedPref.getString("pharmacy","")
-        val gasPref = sharedPref.getString("gastation","")
-        val hospitalPref = sharedPref.getString("hospital","")
+        if (savedInstanceState != null) {
+            shoppingList[list.indexOf("supermarket")] =
+                savedInstanceState.getString("supermarket", "")
+            shoppingList[list.indexOf("pharmacy")] =
+                savedInstanceState.getString("pharmacy", "")
+            shoppingList[list.indexOf("gas_station")] =
+                savedInstanceState.getString("gas_station", "")
+            shoppingList[list.indexOf("hospital")] =
+                savedInstanceState.getString("hospital", "")
+        } else {
+            shoppingList[list.indexOf("supermarket")] = sharedPref.getString("market","").toString()
+            shoppingList[list.indexOf("pharmacy")] = sharedPref.getString("pharmacy","").toString()
+            shoppingList[list.indexOf("gas_station")] = sharedPref.getString("gas_station","").toString()
+            shoppingList[list.indexOf("hospital")] = sharedPref.getString("hospital","").toString()
 
-        sharedPref.edit().remove("market").apply()
-        sharedPref.edit().remove("pharmacy").apply()
-        sharedPref.edit().remove("gastation").apply()
-        sharedPref.edit().remove("hospital").apply()
+            val editor = sharedPref.edit()
+            editor.remove("market")
+            editor.remove("pharmacy")
+            editor.remove("gas_station")
+            editor.remove("hospital")
+        }
 
-        if (marketPref != null) {
-            shoppingList[0] = marketPref
-        }
-        if(pharmacyPref != null) {
-            shoppingList[1] = pharmacyPref
-        }
-        if (gasPref != null) {
-            shoppingList[2] = gasPref
-        }
-        if(hospitalPref != null) {
-            shoppingList[3] = hospitalPref
-        }
+
 
         //inizialmente i pulsati vengono disabilitati e nascosti, per poi apparire con un'animazione di transizione quando viene premuto quello centrale
         buttonTwo.alpha = 0f
@@ -245,12 +251,21 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
     }
 
     override fun onDestroy() {
-        super.onDestroy()
 
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(context?.applicationContext)
-        sharedPref.edit().remove("market").apply()
-        sharedPref.edit().remove("pharmacy").apply()
-        sharedPref.edit().remove("gastation").apply()
-        sharedPref.edit().remove("hospital").apply()
+        val editor = sharedPref.edit()
+        editor.remove("market")
+        editor.remove("pharmacy")
+        editor.remove("gas_station")
+        editor.remove("hospital")
+        super.onDestroy()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        outState.putString("supermarket",shoppingList[list.indexOf("supermarket")])
+        outState.putString("pharmacy",shoppingList[list.indexOf("pharmacy")])
+        outState.putString("gas_station",shoppingList[list.indexOf("gas_station")])
+        outState.putString("hospital",shoppingList[list.indexOf("hospital")])
     }
 }
