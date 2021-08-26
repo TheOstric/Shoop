@@ -2,15 +2,20 @@ package com.example.myapplication
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentSender.SendIntentException
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
+import android.provider.Settings
+import android.telephony.TelephonyManager
 import android.util.Log
 import android.widget.Button
 import android.widget.PopupMenu
@@ -58,7 +63,6 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
     private lateinit var mService: GoogleAPI
     private lateinit var mScalarService: GoogleAPI
     internal lateinit var currentPlacesModel: PlacesModel
-    private lateinit var mExecutor: Executor
 
     val pointsList = ArrayList<String>()
     val driving = ArrayList<String>()
@@ -87,7 +91,7 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
     private var count = 0
 
-    @SuppressLint("RestrictedApi")
+    @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
@@ -138,8 +142,6 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         //Initialize service
         mService = Common.googleAPI
         mScalarService = Common.googleAPIScalars
-
-        mExecutor = ContextCompat.getMainExecutor(this)
 
         val driveButton = findViewById<Button>(R.id.driving_button)
         val listButton = findViewById<Button>(R.id.shoppinglist_button)
@@ -192,17 +194,13 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
                 checkedItems = load(0)
             } else {
                 // Add a checkbox list
-                if (market != null && pharmacy != null && gas != null && hospital != null) {
-                    val shopList = "SUPERMERCATO".lines().plus(market.lines()).plus("\nFARMACIA\n").plus(pharmacy.lines()).plus("\nBENZINAIO\n").plus(gas.lines()).plus("\nOSPEDALE\n").plus(hospital.lines())
+                val shopList = "SUPERMERCATO".lines().plus(market.lines()).plus("\nFARMACIA\n").plus(pharmacy.lines()).plus("\nBENZINAIO\n").plus(gas.lines()).plus("\nOSPEDALE\n").plus(hospital.lines())
 
-                    val array: Array<String> = shopList.toTypedArray()
+                val array: Array<String> = shopList.toTypedArray()
 
-                    checkedItems = load(array.size)
-                    builder.setMultiChoiceItems(array, checkedItems) { dialog, which, isChecked ->
-                        checkedItems[which] = isChecked
-                    }
-                } else {
-                    builder.setMessage("Errore! Provare a re-inserire la lista della spesa.")
+                checkedItems = load(array.size)
+                builder.setMultiChoiceItems(array, checkedItems) { dialog, which, isChecked ->
+                    checkedItems[which] = isChecked
                 }
             }
 
@@ -616,47 +614,13 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
 
     private fun buildLocationRequest(){
         locationRequest = LocationRequest()
-        locationRequest.priority = com.google.android.gms.location.LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
-        locationRequest.interval = 5000
-        locationRequest.fastestInterval = 3000
-        locationRequest.smallestDisplacement = 10f
-        val builder = LocationSettingsRequest.Builder()
-            .addLocationRequest(locationRequest)
-
-        val result: Task<LocationSettingsResponse> =
-            LocationServices.getSettingsClient(this@MapsActivity)
-                .checkLocationSettings(builder.build())
-
-        result.addOnCompleteListener(OnCompleteListener<LocationSettingsResponse?> { task ->
-            try {
-                val response = task.getResult(ApiException::class.java)
-                // All location settings are satisfied. The client can initialize location
-                // requests here.
-            } catch (exception: ApiException) {
-                when (exception.statusCode) {
-                    LocationSettingsStatusCodes.RESOLUTION_REQUIRED ->                             // Location settings are not satisfied. But could be fixed by showing the
-                        // user a dialog.
-                        try {
-                            // Cast to a resolvable exception.
-                            val resolvable = exception as ResolvableApiException
-                            // Show the dialog by calling startResolutionForResult(),
-                            // and check the result in onActivityResult().
-                            resolvable.startResolutionForResult(
-                                this@MapsActivity,
-                                LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
-                            )
-                        } catch (e: SendIntentException) {
-                            // Ignore the error.
-                        } catch (e: ClassCastException) {
-                            // Ignore, should be an impossible error.
-                        }
-                }
-            }
-        })
+        locationRequest.priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
+        locationRequest.numUpdates = 1
+        locationRequest.interval = 0
     }
 
     private fun checkLocationPermission(): Boolean{
-        if(androidx.core.content.ContextCompat.checkSelfPermission(this,android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        if(ContextCompat.checkSelfPermission(this,android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,android.Manifest.permission.ACCESS_FINE_LOCATION))
                 ActivityCompat.requestPermissions(this, kotlin.arrayOf(
@@ -692,10 +656,6 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
         return true
     }
 
-    override fun onMyLocationClick(p0: Location) {
-        TODO("Not yet implemented")
-    }
-
     private fun save(isChecked: BooleanArray) {
         val sharedPreferences = getPreferences(MODE_PRIVATE)
         val editor = sharedPreferences.edit()
@@ -712,5 +672,9 @@ class MapsActivity : FragmentActivity(), OnMapReadyCallback,
             reChecked[i] = sharedPreferences.getBoolean(i.toString(), false)
         }
         return reChecked
+    }
+
+    override fun onMyLocationClick(p0: Location) {
+        TODO("Not yet implemented")
     }
 }

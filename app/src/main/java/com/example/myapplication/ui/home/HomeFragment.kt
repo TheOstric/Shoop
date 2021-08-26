@@ -1,16 +1,21 @@
 package com.example.myapplication.ui.home
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.telephony.TelephonyManager
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -31,10 +36,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
 
-class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainScope(){
 
-   // private lateinit var homeViewModel: HomeViewModel
-    private var fragmentHomeBinding: FragmentHomeBinding? = null
+class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainScope(){
 
     private var _binding: FragmentHomeBinding? = null
     // This property is only valid between onCreateView and
@@ -78,9 +81,32 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         return root
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.P)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        val tm = context?.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        if(!tm.isDataEnabled){
+            val alertDialog = AlertDialog.Builder(context)
+            alertDialog.setTitle("Connessione internet")
+                .setMessage("La tua connessione sembra spenta. Per favore attivala per usufruire del servizio.")
+                .setCancelable(false)
+                .setPositiveButton("Attiva"
+                ) { DialogInterface, it ->
+                    startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS))
+                }.show()
+        }
+        val lm = context?.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        if(!lm.isLocationEnabled){
+            val alertDialog = AlertDialog.Builder(context)
+            alertDialog.setTitle("GPS")
+                .setMessage("Il tuo GPS sembra spento. Per favore attivalo per usufruire del servizio")
+                .setCancelable(false)
+                .setPositiveButton("Attiva"
+                ) { DialogInterface, it ->
+                    startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }.show()
+        }
 
         recyclerView = binding.recyclerViewMain
         linearLayoutManager = LinearLayoutManager(this.context)
@@ -147,14 +173,14 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         } else {
             shoppingList[list.indexOf("supermarket")] = sharedPref.getString("market","").toString()
             shoppingList[list.indexOf("pharmacy")] = sharedPref.getString("pharmacy","").toString()
-            shoppingList[list.indexOf("gas_station")] = sharedPref.getString("gas_station","").toString()
+            shoppingList[list.indexOf("gas_station")] = sharedPref.getString("gastation","").toString()
             shoppingList[list.indexOf("hospital")] = sharedPref.getString("hospital","").toString()
 
             val editor = sharedPref.edit()
-            editor.remove("market")
-            editor.remove("pharmacy")
-            editor.remove("gas_station")
-            editor.remove("hospital")
+            editor.remove("market").apply()
+            editor.remove("pharmacy").apply()
+            editor.remove("gastation").apply()
+            editor.remove("hospital").apply()
         }
 
 
@@ -187,6 +213,8 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
     }
 
     private fun calculateTrip(shoppingList: MutableList<String>) {
+
+
         val intent = Intent(this.context, MapsActivity::class.java)
         intent.putExtra("market", shoppingList[0])
         intent.putExtra("pharmacy",shoppingList[1])
@@ -210,8 +238,8 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
         val currentDate = sdf.format(Date())
         max_id++
-        val entity: DataEntity =
-            com.example.myapplication.database.DataEntity(max_id, Date().time / 1000,currentDate, sList, pList, gList, hList)
+        val entity =
+            DataEntity(max_id, Date().time / 1000,currentDate, sList, pList, gList, hList)
         try {
             mViewModel.viewModelScope.launch {
                 mViewModel.insert(entity)
@@ -223,41 +251,6 @@ class HomeFragment : Fragment(R.layout.fragment_home), CoroutineScope by MainSco
         if (!exc) {
             Toast.makeText(this.context, "Salvato.", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun onItemLongClick(shopping_list: MutableList<String>,
-                                list: MutableList<String>, position: Int) : Boolean{
-        val alertDialog = AlertDialog.Builder(this.context).create()
-        val dialogView = layoutInflater.inflate(R.layout.visualize_service_dialog, null)
-        alertDialog.setView(dialogView)
-        val textView = dialogView.rootView.findViewById<TextView>(R.id.visualize_textview)
-        alertDialog.setCancelable(true)
-        when (list[position]) {
-            "Supermercato" -> if (shopping_list[0] != "") textView.text =
-                shopping_list[0] else textView.setText(R.string.Vuoto)
-            "Farmacia" -> if (shopping_list[1] != "") textView.text =
-                shopping_list[1] else textView.setText(R.string.Vuoto)
-            "Benzinaio" -> if (shopping_list[2] != "") textView.text =
-                shopping_list[2] else textView.setText(R.string.Vuoto)
-            "Ospedale" -> if (shopping_list[3] != "") textView.text =
-                shopping_list[3] else textView.setText(R.string.Vuoto)
-        }
-        alertDialog.show()
-        return true
-    }
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
-
-    override fun onDestroy() {
-
-        val editor = sharedPref.edit()
-        editor.remove("market")
-        editor.remove("pharmacy")
-        editor.remove("gas_station")
-        editor.remove("hospital")
-        super.onDestroy()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
